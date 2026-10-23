@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#4f46e5">
+  <title>ระบบประเมินการสอนของครูช่วยสอน</title>
+  <meta name="description" content="ระบบประเมินการสอนของครูช่วยสอน">
+
+  <!-- Preview เวลาแชร์ลิงก์ใน LINE / Facebook / Messenger -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="ระบบประเมินการสอนของครูช่วยสอน">
+  <meta property="og:description" content="คลิกเพื่อเข้าสู่ระบบประเมินการสอนของครูช่วยสอน">
+  <!-- ถ้ามีรูปปก ให้อัปโหลด cover.png ขึ้น repo แล้วเปิดบรรทัดนี้ -->
+  <!-- <meta property="og:image" content="https://USERNAME.github.io/REPO/cover.png"> -->
+
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <link rel="preconnect" href="https://script.google.com">
+  <link rel="preconnect" href="https://script.googleusercontent.com">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100vh;   /* fallback เบราว์เซอร์เก่า */
+      height: 100dvh;  /* กัน address bar มือถือบัง */
+      overflow: hidden;
+      background: #ffffff;
+      font-family: 'Prompt', sans-serif;
+      -webkit-text-size-adjust: 100%;
+      overscroll-behavior: none;
+    }
+
+    /* iframe เต็มจอ ไม่มีขอบ ไม่มี scrollbar ภายนอก + เว้น safe-area (รอยบาก) */
+    #app {
+      position: fixed;
+      top: env(safe-area-inset-top, 0px);
+      left: env(safe-area-inset-left, 0px);
+      width: calc(100% - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+      height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+      height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+      border: 0;
+      display: block;
+      background: #ffffff;
+    }
+
+    /* ===== Loading Screen ===== */
+    #loader {
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: env(safe-area-inset-top) 24px env(safe-area-inset-bottom);
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      color: #fff;
+      text-align: center;
+      transition: opacity .6s ease, visibility .6s ease;
+    }
+    #loader.hide { opacity: 0; visibility: hidden; pointer-events: none; }
+
+    .spinner {
+      width: 56px; height: 56px;
+      border: 5px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .title { font-size: clamp(18px, 5vw, 26px); font-weight: 500; line-height: 1.4; }
+    .sub   { font-size: 14px; opacity: .85; }
+
+    .dots span { animation: blink 1.4s infinite both; }
+    .dots span:nth-child(2) { animation-delay: .2s; }
+    .dots span:nth-child(3) { animation-delay: .4s; }
+    @keyframes blink { 0%,80%,100% { opacity: 0; } 40% { opacity: 1; } }
+
+    #retry {
+      display: none;
+      margin-top: 4px;
+      padding: 10px 26px;
+      border: 2px solid #fff;
+      border-radius: 999px;
+      background: transparent;
+      color: #fff;
+      font-family: inherit;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    #retry:active { background: rgba(255,255,255,.2); }
+  </style>
+</head>
+<body>
+
+  <div id="loader" role="status" aria-live="polite">
+    <div class="spinner"></div>
+    <div class="title">ระบบประเมินการสอนของครูช่วยสอน</div>
+    <div class="sub" id="loadText">กำลังโหลดระบบ<span class="dots"><span>.</span><span>.</span><span>.</span></span></div>
+    <button id="retry" type="button">ลองใหม่อีกครั้ง</button>
+  </div>
+
+  <iframe
+    id="app"
+    title="ระบบประเมินการสอนของครูช่วยสอน"
+    allow="fullscreen"
+    allowfullscreen
+    scrolling="auto"
+    referrerpolicy="no-referrer-when-downgrade">
+  </iframe>
+
+  <script>
+    (function () {
+      var APP_URL = 'https://script.google.com/macros/s/AKfycbzCVXisnr8mA3g-CVnl62dQDg_DdHLdXHt6lNCGMTQulcR3_gfJEYmlQctHb0FKH-Ia/exec';
+
+      var frame    = document.getElementById('app');
+      var loader   = document.getElementById('loader');
+      var loadText = document.getElementById('loadText');
+      var retryBtn = document.getElementById('retry');
+      var loaded   = false;
+      var slowTimer;
+
+      // ส่งต่อ query string (เช่น ?id=123) ไปยัง Apps Script
+      function buildUrl() {
+        var qs = window.location.search;
+        return qs ? APP_URL + (APP_URL.indexOf('?') > -1 ? '&' + qs.slice(1) : qs) : APP_URL;
+      }
+
+      function hideLoader() {
+        if (loaded) return;
+        loaded = true;
+        clearTimeout(slowTimer);
+        // หน่วงเล็กน้อยให้เนื้อหาภายใน Apps Script render เสร็จ
+        setTimeout(function () { loader.classList.add('hide'); }, 400);
+      }
+
+      function start() {
+        loaded = false;
+        loader.classList.remove('hide');
+        retryBtn.style.display = 'none';
+        loadText.innerHTML = 'กำลังโหลดระบบ<span class="dots"><span>.</span><span>.</span><span>.</span></span>';
+
+        frame.onload = function () {
+          if (frame.getAttribute('src')) hideLoader();
+        };
+        frame.src = buildUrl();
+
+        // ถ้าโหลดนานเกิน 20 วินาที แสดงปุ่มลองใหม่
+        slowTimer = setTimeout(function () {
+          if (!loaded) {
+            loadText.textContent = 'การเชื่อมต่อช้ากว่าปกติ กรุณาลองใหม่อีกครั้ง';
+            retryBtn.style.display = 'inline-block';
+          }
+        }, 20000);
+      }
+
+      retryBtn.addEventListener('click', function () {
+        frame.removeAttribute('src');
+        setTimeout(start, 100);
+      });
+
+      start();
+    })();
+  </script>
+</body>
+</html>
