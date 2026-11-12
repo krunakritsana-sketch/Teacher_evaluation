@@ -3,174 +3,279 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#4f46e5">
-  <title>ระบบประเมินการสอนของครูช่วยสอน</title>
-  <meta name="description" content="ระบบประเมินการสอนของครูช่วยสอน">
-
-  <!-- Preview เวลาแชร์ลิงก์ใน LINE / Facebook / Messenger -->
-  <meta property="og:type" content="website">
-  <meta property="og:title" content="ระบบประเมินการสอนของครูช่วยสอน">
-  <meta property="og:description" content="คลิกเพื่อเข้าสู่ระบบประเมินการสอนของครูช่วยสอน">
-  <!-- ถ้ามีรูปปก ให้อัปโหลด cover.png ขึ้น repo แล้วเปิดบรรทัดนี้ -->
-  <!-- <meta property="og:image" content="https://USERNAME.github.io/REPO/cover.png"> -->
-
+  <meta name="theme-color" content="#0b2a4a">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="format-detection" content="telephone=no">
 
+  <title>ระบบประเมินครูผู้สอนและวิทยากร | โรงเรียนสารบรรณ กรมสารบรรณทหารเรือ</title>
+  <meta name="description" content="ระบบประเมินครูผู้สอนและวิทยากร โรงเรียนสารบรรณ กรมสารบรรณทหารเรือ">
+
+  <!-- Open Graph: ตัวอย่างลิงก์ตอนแชร์ใน LINE / Facebook / Messenger -->
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="th_TH">
+  <meta property="og:title" content="ระบบประเมินครูผู้สอนและวิทยากร">
+  <meta property="og:description" content="โรงเรียนสารบรรณ กรมสารบรรณทหารเรือ">
+  <meta property="og:url" content="https://USERNAME.github.io/REPO/">
+  <meta property="og:image" content="https://USERNAME.github.io/REPO/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <!-- เตรียมเชื่อมต่อล่วงหน้า ให้โหลดเร็วขึ้น -->
   <link rel="preconnect" href="https://script.google.com">
   <link rel="preconnect" href="https://script.googleusercontent.com">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500&display=swap" rel="stylesheet">
 
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --primary: #0b2a4a;
+      --primary-2: #14406e;
+      --accent: #c9a227;
+      /* ถ้ายังเห็นแถบ "แอปพลิเคชันนี้สร้างโดยผู้ใช้ Google Apps Script"
+         ให้ใส่ความสูงแถบ เช่น 40px เพื่อตัดส่วนบนทิ้ง (ปกติปล่อย 0px) */
+      --banner-offset: 0px;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
     html, body {
       width: 100%;
-      height: 100vh;   /* fallback เบราว์เซอร์เก่า */
-      height: 100dvh;  /* กัน address bar มือถือบัง */
-      overflow: hidden;
-      background: #ffffff;
-      font-family: 'Prompt', sans-serif;
+      height: 100%;
+      overflow: hidden;              /* ไม่มี scrollbar ของหน้าหลัก */
+      overscroll-behavior: none;     /* กันดึงเด้ง / pull-to-refresh */
+      background: var(--primary);
       -webkit-text-size-adjust: 100%;
-      overscroll-behavior: none;
     }
 
-    /* iframe เต็มจอ ไม่มีขอบ ไม่มี scrollbar ภายนอก + เว้น safe-area (รอยบาก) */
+    /* กรอบแอปเต็มจอ: 100dvh กันแถบ address bar บนมือถือบัง */
     #app {
       position: fixed;
-      top: env(safe-area-inset-top, 0px);
-      left: env(safe-area-inset-left, 0px);
-      width: calc(100% - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
-      height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
-      height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+      inset: 0;
+      width: 100%;
+      height: 100vh;                 /* fallback สำหรับเบราว์เซอร์เก่า */
+      height: 100dvh;
+      overflow: hidden;
+      background: #ffffff;
+    }
+
+    #app iframe {
+      position: absolute;
+      left: 0;
+      top: calc(-1 * var(--banner-offset));
+      width: 100%;
+      height: calc(100% + var(--banner-offset));
       border: 0;
+      margin: 0;
+      padding: 0;
       display: block;
       background: #ffffff;
     }
 
-    /* ===== Loading Screen ===== */
+    /* ===== หน้าจอโหลด ===== */
     #loader {
       position: fixed;
       inset: 0;
-      z-index: 999;
+      z-index: 10;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 20px;
-      padding: env(safe-area-inset-top) 24px env(safe-area-inset-bottom);
-      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-      color: #fff;
+      gap: 18px;
+      padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right))
+               max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+      background: linear-gradient(160deg, var(--primary) 0%, var(--primary-2) 100%);
+      color: #ffffff;
       text-align: center;
+      font-family: "Sarabun", "Noto Sans Thai", "Leelawadee UI", "Thonburi", Tahoma, sans-serif;
+      opacity: 1;
+      visibility: visible;
       transition: opacity .6s ease, visibility .6s ease;
     }
     #loader.hide { opacity: 0; visibility: hidden; pointer-events: none; }
 
+    .emblem {
+      width: 72px; height: 72px;
+      border-radius: 50%;
+      border: 3px solid var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 34px; font-weight: 700; color: var(--accent);
+    }
     .spinner {
-      width: 56px; height: 56px;
-      border: 5px solid rgba(255,255,255,.3);
-      border-top-color: #fff;
+      width: 52px; height: 52px;
+      border: 5px solid rgba(255, 255, 255, .18);
+      border-top-color: var(--accent);
       border-radius: 50%;
       animation: spin 1s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .title { font-size: clamp(18px, 5vw, 26px); font-weight: 500; line-height: 1.4; }
-    .sub   { font-size: 14px; opacity: .85; }
+    .app-title { font-size: clamp(19px, 5.2vw, 28px); font-weight: 700; line-height: 1.4; }
+    .app-sub   { font-size: clamp(14px, 3.8vw, 18px); opacity: .88; line-height: 1.6; }
+    .status    { font-size: 14px; opacity: .7; min-height: 1.5em; }
 
-    .dots span { animation: blink 1.4s infinite both; }
-    .dots span:nth-child(2) { animation-delay: .2s; }
-    .dots span:nth-child(3) { animation-delay: .4s; }
-    @keyframes blink { 0%,80%,100% { opacity: 0; } 40% { opacity: 1; } }
-
-    #retry {
-      display: none;
-      margin-top: 4px;
-      padding: 10px 26px;
-      border: 2px solid #fff;
-      border-radius: 999px;
-      background: transparent;
-      color: #fff;
-      font-family: inherit;
-      font-size: 15px;
-      cursor: pointer;
+    /* ===== กรณีโหลดไม่สำเร็จ ===== */
+    #fallback { display: none; flex-direction: column; gap: 12px; align-items: center; max-width: 360px; }
+    #fallback.show { display: flex; }
+    #fallback p { font-size: 15px; line-height: 1.6; opacity: .9; }
+    .btn {
+      appearance: none; border: 0; cursor: pointer;
+      width: 100%; padding: 12px 20px; border-radius: 10px;
+      font: inherit; font-size: 16px; font-weight: 600;
+      background: var(--accent); color: var(--primary);
+      text-decoration: none; display: block;
     }
-    #retry:active { background: rgba(255,255,255,.2); }
+    .btn.secondary { background: rgba(255,255,255,.15); color: #ffffff; }
+    #ios-hint { display: none; font-size: 14px; opacity: .85; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .spinner { animation-duration: 3s; }
+      #loader { transition: none; }
+    }
   </style>
 </head>
 <body>
 
+  <!-- หน้าจอโหลด -->
   <div id="loader" role="status" aria-live="polite">
-    <div class="spinner"></div>
-    <div class="title">ระบบประเมินการสอนของครูช่วยสอน</div>
-    <div class="sub" id="loadText">กำลังโหลดระบบ<span class="dots"><span>.</span><span>.</span><span>.</span></span></div>
-    <button id="retry" type="button">ลองใหม่อีกครั้ง</button>
+    <div class="emblem" aria-hidden="true">ส</div>
+    <div class="app-title">ระบบประเมินครูผู้สอนและวิทยากร</div>
+    <div class="app-sub">โรงเรียนสารบรรณ<br>กรมสารบรรณทหารเรือ</div>
+    <div class="spinner" id="spinner" aria-hidden="true"></div>
+    <div class="status" id="status">กำลังโหลดระบบ...</div>
+
+    <div id="fallback">
+      <p>ไม่สามารถโหลดระบบได้ในขณะนี้<br>กรุณาตรวจสอบสัญญาณอินเทอร์เน็ตแล้วลองใหม่</p>
+      <button class="btn" type="button" id="btn-retry">ลองใหม่อีกครั้ง</button>
+      <a class="btn secondary" id="btn-external" href="#" rel="noopener">เปิดในเบราว์เซอร์</a>
+      <div id="ios-hint">หรือแตะเมนู ⋯ มุมขวา แล้วเลือก "เปิดในเบราว์เซอร์"</div>
+    </div>
   </div>
 
-  <iframe
-    id="app"
-    title="ระบบประเมินการสอนของครูช่วยสอน"
-    allow="fullscreen"
-    allowfullscreen
-    scrolling="auto"
-    referrerpolicy="no-referrer-when-downgrade">
-  </iframe>
+  <!-- กรอบแอป (iframe ถูกสร้างด้วย JavaScript ด้านล่าง) -->
+  <main id="app"></main>
+
+  <noscript>
+    <div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0b2a4a;color:#fff;font-family:Tahoma,sans-serif;text-align:center;padding:24px;z-index:20;">
+      กรุณาเปิดใช้งาน JavaScript เพื่อใช้งานระบบ
+    </div>
+  </noscript>
 
   <script>
-    (function () {
-      var APP_URL = 'https://script.google.com/macros/s/AKfycbzCVXisnr8mA3g-CVnl62dQDg_DdHLdXHt6lNCGMTQulcR3_gfJEYmlQctHb0FKH-Ia/exec';
+  (function () {
+    "use strict";
 
-      var frame    = document.getElementById('app');
-      var loader   = document.getElementById('loader');
-      var loadText = document.getElementById('loadText');
-      var retryBtn = document.getElementById('retry');
-      var loaded   = false;
-      var slowTimer;
+    /* ================= ตั้งค่า ================= */
+    var GAS_URL = "https://script.google.com/macros/s/AKfycbxew8vszsRKNd4EVI9tZX81uUwqKaoc0bL8YLDYVH_oUCrQvS0MATK0vpTleQ8Tnw/exec";
+    var APP_TITLE = "ระบบประเมินครูผู้สอนและวิทยากร";
+    var LOAD_TIMEOUT_MS = 25000;          // ถ้าเกินเวลานี้ยังโหลดไม่เสร็จ แสดงปุ่มลองใหม่
+    var SLOW_HINT_MS = 7000;              // แสดงข้อความ "สัญญาณช้า"
+    var FORCE_EXTERNAL_IN_LINE = false;   // true = บังคับ LINE ให้เปิดในเบราว์เซอร์ภายนอกทันที
+    /* ========================================== */
 
-      // ส่งต่อ query string (เช่น ?id=123) ไปยัง Apps Script
-      function buildUrl() {
-        var qs = window.location.search;
-        return qs ? APP_URL + (APP_URL.indexOf('?') > -1 ? '&' + qs.slice(1) : qs) : APP_URL;
+    var ua = navigator.userAgent || "";
+    var isLine = /\bLine\//i.test(ua);
+    var isFacebook = /FBAN|FBAV|FB_IAB|FBIOS|FB4A|Messenger/i.test(ua);
+    var isAndroid = /Android/i.test(ua);
+    var isIOS = /iPhone|iPad|iPod/i.test(ua) ||
+                (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+    // (ตัวเลือก) LINE: บังคับเปิดในเบราว์เซอร์ภายนอก (URL ยังเป็นโดเมนของคุณ)
+    if (isLine && FORCE_EXTERNAL_IN_LINE && !/[?&]openExternalBrowser=1/.test(location.search)) {
+      location.replace(withParam(location.href, "openExternalBrowser", "1"));
+      return;
+    }
+
+    // ส่งต่อพารามิเตอร์ (เช่น ?course=xx) ไปยัง GAS และตัดพารามิเตอร์ติดตามของ FB/LINE ออก
+    var src = GAS_URL;
+    try {
+      var params = new URLSearchParams(location.search);
+      ["openExternalBrowser", "fbclid", "mibextid", "utm_source", "utm_medium",
+       "utm_campaign", "utm_content", "utm_term"].forEach(function (k) { params.delete(k); });
+      var qs = params.toString();
+      if (qs) src += (src.indexOf("?") > -1 ? "&" : "?") + qs;
+    } catch (e) { /* เบราว์เซอร์เก่ามาก: ใช้ URL ตรง */ }
+
+    // แก้ความสูงสำหรับเบราว์เซอร์ที่ไม่รองรับ dvh (in-app browser รุ่นเก่า)
+    var app = document.getElementById("app");
+    var supportsDvh = window.CSS && CSS.supports && CSS.supports("height", "100dvh");
+    function fixHeight() { app.style.height = window.innerHeight + "px"; }
+    if (!supportsDvh) {
+      fixHeight();
+      window.addEventListener("resize", fixHeight);
+      window.addEventListener("orientationchange", function () { setTimeout(fixHeight, 300); });
+    }
+
+    // สร้าง iframe
+    var loader = document.getElementById("loader");
+    var statusEl = document.getElementById("status");
+    var spinner = document.getElementById("spinner");
+    var fallback = document.getElementById("fallback");
+    var loaded = false;
+
+    var frame = document.createElement("iframe");
+    frame.title = APP_TITLE;
+    frame.setAttribute("allow", "fullscreen");
+    frame.setAttribute("allowfullscreen", "");
+    frame.setAttribute("frameborder", "0");
+    frame.setAttribute("scrolling", "auto"); // ให้เนื้อหาในระบบเลื่อนได้ แต่หน้าหลักไม่มี scrollbar
+    frame.setAttribute("referrerpolicy", "strict-origin-when-cross-origin");
+    frame.addEventListener("load", onLoaded);
+    frame.src = src;
+    app.appendChild(frame);
+
+    var slowTimer = setTimeout(function () {
+      if (!loaded) statusEl.textContent = "กำลังเชื่อมต่อ... สัญญาณอาจช้า กรุณารอสักครู่";
+    }, SLOW_HINT_MS);
+
+    var failTimer = setTimeout(function () {
+      if (!loaded) showFallback();
+    }, LOAD_TIMEOUT_MS);
+
+    function onLoaded() {
+      if (loaded) return;
+      loaded = true;
+      clearTimeout(slowTimer);
+      clearTimeout(failTimer);
+      // หน่วงเล็กน้อยให้ GAS วาดหน้าจอเสร็จ แล้วค่อย fade out
+      setTimeout(function () {
+        loader.classList.add("hide");
+        setTimeout(function () { loader.style.display = "none"; }, 700);
+      }, 300);
+    }
+
+    function showFallback() {
+      spinner.style.display = "none";
+      statusEl.textContent = "";
+      fallback.classList.add("show");
+
+      var ext = document.getElementById("btn-external");
+      if (isLine) {
+        ext.href = withParam(location.href, "openExternalBrowser", "1");
+      } else if (isFacebook && isAndroid) {
+        // เปิดด้วย Chrome บน Android
+        ext.href = "intent://" + location.host + location.pathname + location.search +
+                   "#Intent;scheme=https;package=com.android.chrome;end";
+      } else if (isFacebook && isIOS) {
+        ext.style.display = "none";
+        document.getElementById("ios-hint").style.display = "block";
+      } else {
+        ext.href = location.href;
+        ext.target = "_blank";
       }
+    }
 
-      function hideLoader() {
-        if (loaded) return;
-        loaded = true;
-        clearTimeout(slowTimer);
-        // หน่วงเล็กน้อยให้เนื้อหาภายใน Apps Script render เสร็จ
-        setTimeout(function () { loader.classList.add('hide'); }, 400);
-      }
+    document.getElementById("btn-retry").addEventListener("click", function () {
+      location.reload();
+    });
 
-      function start() {
-        loaded = false;
-        loader.classList.remove('hide');
-        retryBtn.style.display = 'none';
-        loadText.innerHTML = 'กำลังโหลดระบบ<span class="dots"><span>.</span><span>.</span><span>.</span></span>';
-
-        frame.onload = function () {
-          if (frame.getAttribute('src')) hideLoader();
-        };
-        frame.src = buildUrl();
-
-        // ถ้าโหลดนานเกิน 20 วินาที แสดงปุ่มลองใหม่
-        slowTimer = setTimeout(function () {
-          if (!loaded) {
-            loadText.textContent = 'การเชื่อมต่อช้ากว่าปกติ กรุณาลองใหม่อีกครั้ง';
-            retryBtn.style.display = 'inline-block';
-          }
-        }, 20000);
-      }
-
-      retryBtn.addEventListener('click', function () {
-        frame.removeAttribute('src');
-        setTimeout(start, 100);
-      });
-
-      start();
-    })();
+    function withParam(url, key, value) {
+      var parts = url.split("#");
+      var base = parts[0];
+      var hash = parts[1] ? "#" + parts[1] : "";
+      return base + (base.indexOf("?") > -1 ? "&" : "?") + key + "=" + value + hash;
+    }
+  })();
   </script>
 </body>
 </html>
